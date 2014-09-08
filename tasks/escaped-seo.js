@@ -1,9 +1,11 @@
 (function() {
-  var env, path;
+  var env, node_url, path;
 
   path = require('path');
 
   env = require('jsdom').env;
+
+  node_url = require('url');
 
   module.exports = function(grunt) {
     return grunt.registerMultiTask('escaped-seo', 'Generate an SEO website and sitemap for google escaped fragments', function() {
@@ -96,7 +98,6 @@
               destFile = match ? match[1] : "";
               pattern = /(<head[\w-="' ]*>)/gi;
               domain = options.domain.indexOf('://') !== -1 ? options.domain : 'http://' + options.domain;
-              content = content.replace(pattern, '$1\n<script type="text/javascript">window.location.href = "' + require('url').resolve(domain, url) + '"; </script>');
               pattern = /(<meta name="fragment" content="!">)/gi;
               content = content.replace(pattern, '');
               _ref = options.replace;
@@ -139,14 +140,16 @@
         return generateSitemap();
       };
       generateSitemap = function() {
-        var domain, pf, priority, time, u, xmlStr, _j, _len1;
+        var domain, parsed_url, pf, priority, time, u, xmlStr, _j, _len1;
         time = new Date().toISOString();
         xmlStr = '<?xml version="1.0" encoding="UTF-8"?>\n';
         xmlStr += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
         domain = options.domain.indexOf('://') !== -1 ? options.domain : 'http://' + options.domain;
         for (_j = 0, _len1 = urls.length; _j < _len1; _j++) {
           url = urls[_j];
-          u = require('url').resolve(domain, url);
+          u = node_url.resolve(domain, url);
+          parsed_url = node_url.parse(u);
+          u = domain + "/#!" + parsed_url.path;
           priority = 1;
           if (u.length > 1) {
             priority -= (u.split("/").length - 1) / 10;
