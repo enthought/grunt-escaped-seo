@@ -149,7 +149,9 @@
           url = urls[_j];
           u = node_url.resolve(domain, url);
           parsed_url = node_url.parse(u);
-          u = domain + "/#!" + parsed_url.path;
+          if (parsed_url.path !== "/") {
+            u = domain + "/#!" + parsed_url.path;
+          }
           priority = 1;
           if (u.length > 1) {
             priority -= (u.split("/").length - 1) / 10;

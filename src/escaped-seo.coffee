@@ -126,7 +126,9 @@ module.exports = (grunt) ->
 				# include hashbang names in sitemap, as they are mostly preferred by google
 				u = node_url.resolve(domain, url)
 				parsed_url = node_url.parse(u)
-				u = domain + "/#!" + parsed_url.path
+				# dont add hashbangs for homepage
+				if parsed_url.path != "/"
+					u = domain + "/#!" + parsed_url.path
 				priority = 1
 				priority -= (u.split("/").length-1)/10 if u.length > 1
 				xmlStr += '  <url>\n'
