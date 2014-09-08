@@ -1,10 +1,11 @@
 # grunt-escaped-seo
 # https://github.com/hazart/grunt-escaped-seo
-# 
+#
 # Copyright (c) 2013 Alex Koch
 # Licensed under the MIT license.
 path = require('path')
 env = require('jsdom').env
+node_url = require('url')
 
 
 module.exports = (grunt) ->
@@ -51,7 +52,7 @@ module.exports = (grunt) ->
 					console.log ">".red, msg
 				@page.set 'onError', (msg, trace) ->
 					msgStack = ['ERROR: '.red + msg]
-					if trace && trace.length 
+					if trace && trace.length
 						msgStack.push('TRACE:');
 						trace.forEach((t) ->
 							msgStack.push(' -> '.red + t.file + ': ' + t.line + (t.function ? ' (in function "' + t.function + '")' : ''))
@@ -66,7 +67,7 @@ module.exports = (grunt) ->
 					)
 					@page.set 'onUrlChanged', null
 				@page.open url, (status) ->
-			
+
 		processPage = () ->
 			@page.evaluate (-> document.documentElement.outerHTML), (result) ->
 				env(result, (errors, window) =>
@@ -79,10 +80,10 @@ module.exports = (grunt) ->
 					pattern = /[#!/]*([\w\/\-_]*)/g
 					match = pattern.exec(url)
 					destFile = if match then match[1] else ""
-					
+
 					pattern = /(<head[\w-="' ]*>)/gi
 					domain = if options.domain.indexOf('://') isnt -1 then options.domain else 'http://' + options.domain
-					content = content.replace(pattern, '$1\n<script type="text/javascript">window.location.href = "' + require('url').resolve(domain,url) + '"; </script>')
+					# content = content.replace(pattern, '$1\n<script type="text/javascript">window.location.href = "' + require('url').resolve(domain,url) + '"; </script>')
 
 					pattern = /(<meta name="fragment" content="!">)/gi
 					content = content.replace(pattern, '')
@@ -92,7 +93,7 @@ module.exports = (grunt) ->
 					destFile += 'index' if destFile.split('/')[destFile.split('/').length-1].length <= 1
 					pf = path.join("./", options.public, options.folder, destFile + ".html")
 					grunt.file.write(pf, content);
-					
+
 					pattern = /href=["']([#!\/]*[\w\/\-_]*)['"]/g
 					while (options.crawl and match = pattern.exec(content))
 						u = match[1]
@@ -122,7 +123,10 @@ module.exports = (grunt) ->
 			xmlStr += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
 			domain = if options.domain.indexOf('://') isnt -1 then options.domain else 'http://' + options.domain
 			for url in urls
-				u = require('url').resolve(domain, url)
+				# include hashbang names in sitemap, as they are mostly preferred by google
+				u = node_url.resolve(domain, url)
+				parsed_url = node_url.parse(u)
+				u = domain + "/#!" + parsed_url.path
 				priority = 1
 				priority -= (u.split("/").length-1)/10 if u.length > 1
 				xmlStr += '  <url>\n'
@@ -134,7 +138,7 @@ module.exports = (grunt) ->
 			xmlStr += '</urlset>'
 
 			pf = path.join(options.public, "/sitemap.xml")
-			grunt.file.write(pf, xmlStr);	
+			grunt.file.write(pf, xmlStr);
 			grunt.log.writeln('File "'.yellow + pf + '" created.'.yellow)
 			done()
 
